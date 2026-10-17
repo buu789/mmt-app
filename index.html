@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Money Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111418" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #ffffff; --text: #1c1f24; --muted: #6b7280; --line: #e5e7eb;
+    --green: #15803d; --red: #b91c1c; --blue: #1d4ed8; --accent: #1d4ed8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418; --card: #1b1f26; --text: #eceff4; --muted: #9aa3b2; --line: #2b313b;
+      --green: #4ade80; --red: #f87171; --blue: #60a5fa; --accent: #3b82f6;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: var(--bg); color: var(--text); touch-action: manipulation;
+         font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 520px; margin: 0 auto; padding: 16px;
+         padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  h1 { font-size: 20px; margin: 4px 0 12px; }
+  h2 { font-size: 15px; margin: 0 0 10px; color: var(--muted); font-weight: 600; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+          padding: 14px; margin-bottom: 14px; }
+  .period { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .period .label { text-align: center; flex: 1; }
+  .period .label b { display: block; }
+  .period .label span { color: var(--muted); font-size: 13px; }
+  .nav { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line);
+         background: var(--card); color: var(--text); font-size: 20px; }
+  .nav:disabled { opacity: .35; }
+  .totals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .total { border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+  .total small { color: var(--muted); display: block; }
+  .total strong { font-size: 18px; }
+  .green { color: var(--green); } .red { color: var(--red); } .blue { color: var(--blue); }
+  .types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .types button { padding: 10px 4px; border-radius: 10px; border: 1px solid var(--line);
+                  background: var(--card); color: var(--text); font-size: 15px; }
+  .types button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  input, select { width: 100%; padding: 11px; margin-bottom: 10px; border-radius: 10px;
+                  border: 1px solid var(--line); background: var(--bg); color: var(--text);
+                  font-size: 16px; }
+  .primary { width: 100%; padding: 12px; border: 0; border-radius: 10px;
+             background: var(--accent); color: #fff; font-size: 16px; font-weight: 600; }
+  .secondary { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--line);
+               background: var(--card); color: var(--text); font-size: 16px; font-weight: 600; }
+  .row { display: flex; gap: 8px; }
+  .row select { flex: 1; margin-bottom: 0; }
+  .row .primary { width: auto; padding: 0 18px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .hint { color: var(--muted); font-size: 14px; margin: 0 0 10px; }
+  .entry { display: flex; align-items: center; gap: 10px; padding: 10px 0;
+           border-top: 1px solid var(--line); }
+  .entry:first-of-type { border-top: 0; }
+  .entry .info { flex: 1; min-width: 0; }
+  .entry .info div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .entry .info small { color: var(--muted); }
+  .del { border: 0; background: none; color: var(--muted); font-size: 20px; padding: 6px 10px; }
+  .empty { color: var(--muted); text-align: center; padding: 12px 0; }
+  #msg { min-height: 20px; color: var(--red); font-size: 14px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Money Tracker</h1>
+
+  <div class="card period">
+    <button class="nav" id="prev" aria-label="Previous month">&#8249;</button>
+    <div class="label"><b id="periodName">&nbsp;</b><span id="periodDates"></span></div>
+    <button class="nav" id="next" aria-label="Next month">&#8250;</button>
+  </div>
+
+  <div class="card">
+    <div class="totals">
+      <div class="total"><small>Received</small><strong class="green" id="tReceived">0</strong></div>
+      <div class="total"><small>Spent</small><strong class="red" id="tSpent">0</strong></div>
+      <div class="total"><small>Saved</small><strong class="blue" id="tSaved">0</strong></div>
+      <div class="total"><small>Left</small><strong id="tLeft">0</strong></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Add entry</h2>
+    <div class="types">
+      <button data-type="received" class="active">Received</button>
+      <button data-type="spent">Spent</button>
+      <button data-type="saved">Saved</button>
+    </div>
+    <input id="amount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Amount (&#8377;)">
+    <input id="note" type="text" maxlength="100" placeholder="Note (optional)">
+    <input id="date" type="date">
+    <button class="primary" id="add">Add</button>
+    <div id="msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Entries this month</h2>
+    <div id="list"></div>
+  </div>
+
+  <div class="card">
+    <h2>Financial month starts on day</h2>
+    <div class="row">
+      <select id="startDay"></select>
+      <button class="primary" id="saveDay">Save</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Your data</h2>
+    <p class="hint">Everything is stored only on this phone. Make a backup now and then.</p>
+    <div class="row2">
+      <button class="secondary" id="backup">Backup</button>
+      <button class="secondary" id="restore">Restore</button>
+    </div>
+    <input id="restoreFile" type="file" accept=".json,application/json" hidden>
+  </div>
+</main>
+
+<script src="logic.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
